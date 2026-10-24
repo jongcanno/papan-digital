@@ -1,18 +1,574 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <meta name="description" content="An application built with Google AI Studio." />
-    <meta property="og:title" content="My Google AI Studio App" />
-    <meta property="og:description" content="An application built with Google AI Studio." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JONG CANNO CUP U17 - Pro Broadcast System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Teko:wght@400;600;700;800&family=Outfit:wght@700;900&family=Anton&family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent-gold: #facc15;
+            --success-green: #16a34a;
+            --fail-red: #dc2626;
+            --navy-deep: #001f3f;
+            --maron-deep: #4a0000;
+        }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+
+        body {
+            background-color: #020617; overflow: hidden; width: 100vw; height: 100vh;
+            font-family: 'Teko', sans-serif;
+            background: radial-gradient(circle at 15% 20%, rgba(0, 31, 63, 0.7) 0%, transparent 50%),
+                        radial-gradient(circle at 85% 80%, rgba(128, 0, 0, 0.7) 0%, transparent 50%),
+                        linear-gradient(135deg, var(--navy-deep) 0%, #020617 50%, var(--maron-deep) 100%);
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* TAMPILAN UTAMA 1600x1200 */
+        #viewport {
+            width: 1600px; height: 1200px; position: absolute; transform-origin: center center;
+            display: flex; flex-direction: column; padding: 30px 40px; z-index: 10;
+            background: rgba(2, 6, 23, 0.5); border: 2px solid rgba(255,255,255,0.05);
+        }
+
+        /* HEADER & KONTROL KANAN ATAS */
+        .top-header-container { width: 100%; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative; height: 60px; }
+        .event-icon-small { font-size: 50px; color: white; filter: drop-shadow(0 0 15px rgba(255,255,255,0.5)); animation: pulseIcon 3s infinite; }
+        @keyframes pulseIcon { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; text-shadow: 0 0 20px var(--accent-gold); color: var(--accent-gold); } 100% { transform: scale(1); opacity: 0.8; } }
+
+        .top-right-controls {
+            position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+            display: flex; gap: 15px; padding: 8px 25px; 
+            background: rgba(0,0,0,0.6); border-radius: 30px; 
+            border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); z-index: 100;
+        }
+        .ui-icon-btn { width: 32px; height: 32px; background: transparent; border: none; display: flex; justify-content: center; align-items: center; color: rgba(255,255,255,0.7); font-size: 24px; cursor: pointer; transition: all 0.3s; }
+        .ui-icon-btn:hover { transform: scale(1.3); color: var(--accent-gold); filter: drop-shadow(0 0 8px var(--accent-gold)); }
+
+        /* GRID PAPAN SKOR */
+        .board-layout { display: grid; grid-template-columns: 1fr 480px 1fr; gap: 20px; height: 100%; position: relative; z-index: 20; }
+        .team-section { display: flex; flex-direction: column; align-items: center; padding-top: 20px; width: 100%; height: 100%; border-radius: 40px; position: relative; overflow: hidden; }
+        .team-home-bg { border-top: 5px solid rgba(0, 100, 255, 0.2); }
+        .team-away-bg { border-top: 5px solid rgba(255, 0, 0, 0.2); }
+
+        .logo-container { width: 320px; height: 320px; display: flex; justify-content: center; align-items: center; z-index: 2; margin-bottom: 15px; }
+        .logo-container img { max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 15px 40px rgba(0,0,0,0.7)); }
+
+        .team-name-display { font-family: 'Enforce', 'Outfit', sans-serif; font-size: 85px; font-weight: 900; color: #ffffff; text-shadow: 0 5px 15px rgba(0,0,0,0.8); white-space: nowrap; margin-bottom: 10px; text-transform: uppercase; z-index: 2; }
+        .score-penalty-wrapper { display: flex; align-items: center; gap: 25px; width: 100%; justify-content: center; z-index: 2; }
+        .score-val { font-family: 'Chakra Petch', sans-serif; font-size: 420px; line-height: 0.8; font-weight: 700; color: #ffffff; -webkit-text-stroke: 5px rgba(255,255,255,0.5); text-shadow: 0 0 20px rgba(255,255,255,0.8), 0 0 40px rgba(255,255,255,0.4), 0 20px 40px rgba(0,0,0,0.9); z-index: 5; letter-spacing: -5px; }
+
+        .penalty-grid-container { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .penalty-row { display: flex; gap: 8px; justify-content: center; }
+        .penalty-dot { width: 38px; height: 38px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.8); background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; font-size: 18px; font-family: sans-serif; color: white; }
+        .penalty-dot.goal { background: var(--success-green); border-color: #fff; box-shadow: 0 0 15px var(--success-green); }
+        .penalty-dot.fail { background: var(--fail-red); border-color: #fff; box-shadow: 0 0 15px var(--fail-red); }
+
+        .center-display { display: flex; flex-direction: column; align-items: center; padding-top: 20px; }
+        .timer-box { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border: 5px solid #334155; border-radius: 35px; width: 100%; padding: 15px; display: flex; justify-content: center; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,1); margin-top: 15px; margin-bottom: 60px; }
+        .timer-val { font-size: 150px; line-height: 1; font-weight: 700; color: var(--accent-gold); font-family: 'Chakra Petch', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: 4px; text-shadow: 0 0 25px rgba(250, 204, 21, 0.4); }
+        .period-box { background: #f59e0b; color: #000; border-radius: 20px; padding: 10px 80px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 15px 30px rgba(0,0,0,0.8); z-index: 40; }
+        .period-num-val { font-size: 100px; font-weight: 900; line-height: 0.85; color: white; text-shadow: 4px 4px 0 #000; }
+        #period-label { font-size: 32px; font-weight: 800; letter-spacing: 0.1em; }
+
+        /* OVERLAY ANIMASI & GOL (DARI KIRI KE KANAN) */
+        #event-overlay { position: absolute; inset: 0; width: 1600px; height: 1200px; z-index: 5000; pointer-events: none; display: flex; visibility: hidden; opacity: 0; background: rgba(0,0,0,0.6); overflow: hidden; }
+        #event-overlay.active { visibility: visible; opacity: 1; transition: opacity 0.3s; }
+        
+        .overlay-card { display: flex; align-items: stretch; height: 100%; width: 100%; position: relative; }
+        
+        @keyframes slideInFromLeft { 
+            0% { transform: translateX(-100%); opacity: 0; } 
+            15% { transform: translateX(0); opacity: 1; }
+            85% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
+        }
+        #event-overlay.active .overlay-card { animation: slideInFromLeft 7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+        .theme-home-overlay { border-left: 60px solid #06b6d4; background: linear-gradient(90deg, rgba(0,31,63,0.95) 0%, rgba(2,6,23,0.9) 100%); }
+        .theme-away-overlay { border-left: 60px solid #ef4444; background: linear-gradient(90deg, rgba(128,0,0,0.95) 0%, rgba(2,6,23,0.9) 100%); }
+
+        .overlay-left-col { width: 35%; display: flex; justify-content: center; align-items: center; border-right: 6px solid rgba(255,255,255,0.1); padding: 40px; }
+        .overlay-right-col { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 100px; position: relative; }
+        
+        .overlay-avatar { width: 380px; height: 380px; object-fit: contain; border-radius: 50%; border: 15px solid rgba(255,255,255,0.2); box-shadow: 0 0 50px rgba(255,255,255,0.2); background-color: #1e293b; padding: 20px; }
+        
+        .overlay-title-text { font-family: 'Anton', sans-serif; font-size: 140px; color: var(--accent-gold); font-style: italic; margin-bottom: -10px; text-transform: uppercase; text-shadow: 0 15px 30px rgba(0,0,0,1); letter-spacing: 8px; line-height: 1; }
+        .active .overlay-title-text.is-goal { 
+            font-size: 170px; 
+            letter-spacing: 10px; 
+            color: #fff; 
+            text-shadow: 0 0 50px var(--accent-gold), 0 15px 30px rgba(0,0,0,1); 
+            animation: goalPulse 1s infinite alternate; 
+            white-space: nowrap;
+        }
+        @keyframes goalPulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); color: var(--accent-gold); } }
+
+        .overlay-player-main { font-family: 'Enforce', 'Outfit', sans-serif; font-weight: 900; font-size: 120px; color: white; line-height: 0.9; text-transform: uppercase; margin-bottom: 20px; text-shadow: 0 10px 20px rgba(0,0,0,0.8); }
+        .overlay-player-info { font-size: 55px; color: var(--accent-gold); font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* SUB & CARDS OVERLAY STYLES */
+        .sub-layout-box { width: 100%; display: flex; flex-direction: column; gap: 25px; margin-top: 20px; }
+        .sub-row-item { display: flex; align-items: center; background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px 40px; border-left: 15px solid transparent; box-shadow: 0 15px 35px rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        .sub-out-item { border-left-color: var(--fail-red); background: linear-gradient(90deg, rgba(220, 38, 38, 0.2), transparent); }
+        .sub-in-item { border-left-color: var(--success-green); background: linear-gradient(90deg, rgba(22, 163, 74, 0.2), transparent); }
+        .sub-badge { font-family: 'Chakra Petch', sans-serif; font-weight: 900; font-size: 45px; padding: 5px 25px; border-radius: 12px; margin-right: 30px; text-align: center; min-width: 140px; border: 3px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .sub-badge.out { background: var(--fail-red); color: white; }
+        .sub-badge.in { background: var(--success-green); color: white; }
+        .sub-name-text { font-family: 'Enforce', 'Outfit', sans-serif; font-size: 70px; font-weight: 900; color: white; margin-right: auto; text-transform: uppercase; text-shadow: 0 5px 10px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 500px; }
+        .sub-num-text { font-family: 'Chakra Petch', sans-serif; font-size: 80px; font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 20px rgba(250, 204, 21, 0.6); }
+        
+        .card-visual-wrapper { position: relative; display: flex; justify-content: center; align-items: center; }
+        .card-element { position: absolute; bottom: -20px; right: -20px; width: 130px; height: 180px; border-radius: 15px; border: 8px solid white; box-shadow: 0 20px 50px rgba(0,0,0,0.9); transform: rotate(15deg); z-index: 10; }
+        .card-element.yellow { background: linear-gradient(135deg, #fef08a 0%, #eab308 100%); }
+        .card-element.red { background: linear-gradient(135deg, #fca5a5 0%, #dc2626 100%); }
+
+        /* WAKTU HABIS MODAL */
+        #time-up-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.90); z-index: 8000; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .time-up-card { background: #b91c1c; color: white; padding: 100px 180px; border-radius: 80px; border: 25px solid white; box-shadow: 0 0 300px rgba(239, 68, 68, 0.9); animation: flashRed 0.5s infinite alternate; }
+        @keyframes flashRed { from { transform: scale(1); } to { transform: scale(1.05); background: #ef4444; } }
+
+        /* PANEL REMOTE CONTROL */
+        #remote-control { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1200px; max-width: 95%; height: 85vh; background: #0f172a; z-index: 100000; display: flex; flex-direction: column; padding: 30px; border-radius: 35px; border: 4px solid #1e293b; box-shadow: 0 50px 100px rgba(0,0,0,0.8); transition: opacity 0.3s ease, transform 0.3s ease; }
+        #remote-control.hidden-panel { opacity: 0; transform: translate(-50%, 60%); pointer-events: none; }
+        .remote-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 20px; margin-bottom: 20px; }
+        .remote-content-scroll { overflow-y: auto; flex: 1; padding-right: 10px; scroll-behavior: smooth; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 200000; display: flex; justify-content: center; align-items: center; }
+        .modal-body { background: #0f172a; padding: 35px; border-radius: 30px; border: 4px solid #334155; width: 95%; max-width: 800px; }
+        
+        .kbd-box { display: inline-block; padding: 4px 10px; background: #1e293b; border: 2px solid #475569; border-radius: 8px; font-family: monospace; color: var(--accent-gold); font-size: 0.9em; font-weight: bold; }
+        .remote-penalty-grid { display: flex; flex-direction: column; gap: 8px; align-items: center; margin-top: 10px; }
+        .remote-penalty-row { display: flex; gap: 6px; }
+        .remote-pen-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; font-weight: bold; }
+        .remote-pen-btn.goal { background: var(--success-green); border-color: #fff; }
+        .remote-pen-btn.fail { background: var(--fail-red); border-color: #fff; }
+
+        /* TOAST FOCUS */
+        #focus-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-gold); color: black; padding: 10px 30px; border-radius: 30px; font-weight: 800; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.5); pointer-events: none; transition: opacity 0.5s; }
+    </style>
+</head>
+<body>
+    <div id="focus-toast">Klik Layar Untuk Mengaktifkan Shortcut Keyboard!</div>
+
+    <div id="viewport">
+        <div class="top-header-container">
+            <div class="event-icon-small"><i class="fas fa-trophy"></i></div>
+            <div class="top-right-controls">
+                <button onclick="window.openStatsModal()" class="ui-icon-btn" title="Statistik"><i class="fas fa-chart-bar"></i></button>
+                <button onclick="window.toggleRemote()" class="ui-icon-btn" title="Panel Remote (M)"><i class="fas fa-sliders-h"></i></button>
+                <button onclick="window.manualBuzzer()" class="ui-icon-btn text-red-500" title="Buzzer Manual"><i class="fas fa-bullhorn"></i></button>
+                <button onclick="window.toggleHelp()" class="ui-icon-btn" title="Pintasan Keyboard"><i class="fas fa-keyboard"></i></button>
+            </div>
+        </div>
+
+        <div class="board-layout">
+            <div class="team-section team-home-bg">
+                <div class="logo-container"><img id="logo-img-home" src="" alt="Logo Home"></div>
+                <h2 id="display-name-home" class="team-name-display">BLAZE X START</h2>
+                <div class="score-penalty-wrapper">
+                    <div id="score-home" class="score-val">0</div>
+                    <div id="pen-home-cont" class="penalty-grid-container hidden"></div>
+                </div>
+            </div>
+
+            <div class="center-display">
+                <div class="timer-box"><div id="timer-display" class="timer-val">20:00</div></div>
+                <div class="period-box"><span id="period-label">BABAK</span><span id="period-display" class="period-num-val">1</span></div>
+            </div>
+
+            <div class="team-section team-away-bg">
+                <div class="logo-container"><img id="logo-img-away" src="" alt="Logo Away"></div>
+                <h2 id="display-name-away" class="team-name-display">ALSEM</h2>
+                <div class="score-penalty-wrapper">
+                    <div id="pen-away-cont" class="penalty-grid-container hidden"></div>
+                    <div id="score-away" class="score-val">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="time-up-overlay">
+            <div class="time-up-card">
+                <h1 style="font-size: 200px; font-weight: 900; line-height: 1;">WAKTU HABIS</h1>
+                <p id="time-up-subtitle" style="font-size: 70px; font-weight: 700; margin-top: 20px;">PERTANDINGAN SELESAI</p>
+            </div>
+        </div>
+
+        <div id="event-overlay">
+            <div id="overlay-card-el" class="overlay-card">
+                <div class="overlay-left-col" id="overlay-icon-visual"></div>
+                <div class="overlay-right-col">
+                    <div id="overlay-status-title" class="overlay-title-text">EVENT!</div>
+                    <div id="overlay-content-area" class="mt-8"></div>
+                    <div style="position:absolute; bottom:60px; right:120px; display:flex; align-items:center; gap:30px;">
+                        <div id="overlay-team-name-small" style="font-size:60px; color:white; font-weight:900; text-transform:uppercase">TEAM</div>
+                        <img id="overlay-team-logo-small" src="" alt="Logo" style="width:180px; height:180px; object-fit:contain; filter:drop-shadow(0 0 20px rgba(255,255,255,0.3));">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REMOTE CONTROL PANEL -->
+    <div id="remote-control" class="hidden-panel">
+        <div class="remote-header">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center text-black font-black">CP</div>
+                <div><h2 class="text-white text-2xl font-bold uppercase">Broadcast Remote</h2><p class="text-slate-500 text-[10px] font-bold uppercase">Connected to Cloud</p></div>
+            </div>
+            <button onclick="window.toggleRemote()" class="w-12 h-12 flex items-center justify-center bg-red-600/20 text-red-500 rounded-full hover:bg-red-600 transition-all"><i class="fas fa-times text-2xl"></i></button>
+        </div>
+
+        <div class="remote-content-scroll custom-scrollbar" id="remote-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- HOME PANEL -->
+                <div class="bg-slate-800/40 p-6 rounded-2xl border border-cyan-500/20 flex flex-col gap-3">
+                    <div class="flex justify-between items-center"><h3 class="text-cyan-400 text-xl font-bold uppercase">Tim Home</h3><button onclick="window.updateScore('home', 1)" class="bg-cyan-600 text-white px-4 py-1 rounded-lg font-bold text-sm">+ GOL (Q)</button></div>
+                    <select id="preset-home" class="w-full bg-slate-900 text-white p-2 rounded-xl border border-slate-700 outline-none text-sm" onchange="window.loadPreset('home', this.value)"><option value="">-- Pilih Preset Tim --</option></select>
+                    <input type="text" id="inp-name-home" oninput="window.debouncedUpdateName('home', this.value)" placeholder="Nama Tim" class="w-full bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none text-lg">
+                    <div class="flex gap-2"><label class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-xl text-center flex-1 cursor-pointer text-xs font-bold uppercase"><i class="fas fa-upload mr-1"></i> Upload Logo (PNG) <input type="file" accept="image/png, image/webp" class="hidden" onchange="window.uploadLogo('home', this)"></label></div>
+                    
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="window.showPlayerSelect('home', 'yellow')" class="flex-1 bg-yellow-500 text-black py-1 rounded-lg font-bold text-xs uppercase">Kuning (Z)</button>
+                        <button onclick="window.showPlayerSelect('home', 'red')" class="flex-1 bg-red-500 text-white py-1 rounded-lg font-bold text-xs uppercase">Merah (C)</button>
+                    </div>
+                    <div id="players-home" class="space-y-1 mb-2 mt-2"></div>
+                    <div id="penalty-ctrl-home" class="hidden mt-2 bg-black/40 p-3 rounded-xl border border-white/10"><div id="remote-pen-grid-home" class="remote-penalty-grid"></div></div>
+                    <div class="grid grid-cols-2 gap-2 mt-auto">
+                        <button onclick="window.updateScore('home', -1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">- SKOR (A)</button>
+                        <button onclick="window.showPlayerSelect('home', 'sub')" class="bg-blue-600 text-white py-2 rounded-lg font-bold text-xs">SUB (PgUp)</button>
+                    </div>
+                </div>
+
+                <!-- CENTER PANEL -->
+                <div class="flex flex-col gap-4">
+                    <div class="bg-slate-800/40 p-6 rounded-2xl border border-white/10 shadow-lg text-center">
+                        <div id="remote-timer-display" class="text-yellow-400 text-7xl font-black font-modern-num mb-4">20:00</div>
+                        <button id="btn-timer" onclick="window.toggleTimer()" class="w-full bg-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-lg transition-all">START (Spasi)</button>
+                        <p class="text-xs text-slate-400 mt-3 uppercase font-bold tracking-widest border-b border-slate-700 pb-1">Kontrol Waktu (Panah)</p>
+                        <div class="grid grid-cols-2 gap-3 w-full mt-2">
+                            <button onclick="window.adjustTime('m', 1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">▲ +1 Menit</button>
+                            <button onclick="window.adjustTime('m', -1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">▼ -1 Menit</button>
+                            <button onclick="window.adjustTime('s', -1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">◀ -1 Detik</button>
+                            <button onclick="window.adjustTime('s', 1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">▶ +1 Detik</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <button onclick="window.togglePenaltyMode()" id="btn-pen-mode" class="bg-purple-600/20 border border-purple-500 text-purple-400 py-3 rounded-xl font-black text-xs uppercase">Mode Penalti: OFF</button>
+                    </div>
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-white/10 flex justify-between items-center">
+                        <button onclick="window.changePeriod(-1)" class="w-10 h-10 bg-slate-800 rounded-full text-white font-bold text-xl">-</button>
+                        <div class="text-center"><span id="remote-period-display" class="text-yellow-500 text-xl font-black uppercase">Babak 1</span></div>
+                        <button onclick="window.changePeriod(1)" class="w-10 h-10 bg-slate-800 rounded-full text-white font-bold text-xl">+</button>
+                    </div>
+                </div>
+
+                <!-- AWAY PANEL -->
+                <div class="bg-slate-800/40 p-6 rounded-2xl border border-red-500/20 flex flex-col gap-3">
+                    <div class="flex justify-between items-center"><h3 class="text-red-500 text-xl font-bold uppercase">Tim Away</h3><button onclick="window.updateScore('away', 1)" class="bg-red-600 text-white px-4 py-1 rounded-lg font-bold text-sm">+ GOL (P)</button></div>
+                    <select id="preset-away" class="w-full bg-slate-900 text-white p-2 rounded-xl border border-slate-700 outline-none text-sm" onchange="window.loadPreset('away', this.value)"><option value="">-- Pilih Preset Tim --</option></select>
+                    <input type="text" id="inp-name-away" oninput="window.debouncedUpdateName('away', this.value)" placeholder="Nama Tim" class="w-full bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none text-lg">
+                    <div class="flex gap-2"><label class="bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-xl text-center flex-1 cursor-pointer text-xs font-bold uppercase"><i class="fas fa-upload mr-1"></i> Upload Logo (PNG) <input type="file" accept="image/png, image/webp" class="hidden" onchange="window.uploadLogo('away', this)"></label></div>
+                    
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="window.showPlayerSelect('away', 'yellow')" class="flex-1 bg-yellow-500 text-black py-1 rounded-lg font-bold text-xs uppercase">Kuning (X)</button>
+                        <button onclick="window.showPlayerSelect('away', 'red')" class="flex-1 bg-red-500 text-white py-1 rounded-lg font-bold text-xs uppercase">Merah (V)</button>
+                    </div>
+                    <div id="players-away" class="space-y-1 mb-2 mt-2"></div>
+                    <div id="penalty-ctrl-away" class="hidden mt-2 bg-black/40 p-3 rounded-xl border border-white/10"><div id="remote-pen-grid-away" class="remote-penalty-grid"></div></div>
+                    <div class="grid grid-cols-2 gap-2 mt-auto">
+                        <button onclick="window.updateScore('away', -1)" class="bg-slate-700 text-white py-2 rounded-lg font-bold text-xs">- SKOR (L)</button>
+                        <button onclick="window.showPlayerSelect('away', 'sub')" class="bg-blue-600 text-white py-2 rounded-lg font-bold text-xs">SUB (PgDn)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS UTILITY -->
+    <div id="player-modal" class="hidden modal-overlay">
+        <div class="modal-body">
+            <h3 id="modal-title" class="text-white font-bold text-2xl mb-6 border-b border-slate-700 pb-3 uppercase text-center">Pilih Pemain</h3>
+            <div id="modal-list-wrapper" class="overflow-y-auto max-h-[50vh] bg-slate-900 rounded-2xl p-4 custom-scrollbar"></div>
+            <button onclick="window.closePlayerModal()" class="mt-6 w-full bg-slate-700 text-white py-3 rounded-xl font-bold text-lg uppercase">Batal</button>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="hidden modal-overlay">
+        <div class="modal-body text-center"><h3 class="text-white font-bold text-2xl uppercase">Statistik Pertandingan</h3><button onclick="document.getElementById('stats-modal').classList.add('hidden')" class="mt-6 w-full bg-slate-700 text-white py-3 rounded-xl font-bold uppercase">Tutup</button></div>
+    </div>
+
+    <div id="help-modal" class="hidden modal-overlay">
+        <div class="modal-body text-center">
+            <h3 class="text-white font-bold text-2xl mb-6 border-b border-slate-700 pb-3 uppercase">Pintasan Keyboard</h3>
+            <div class="grid grid-cols-2 gap-4 text-left text-sm text-slate-200">
+                <div><span class="kbd-box">Spasi</span> : Start/Pause Timer</div>
+                <div><span class="kbd-box">↑</span> / <span class="kbd-box">↓</span> : Menit Timer +/-</div>
+                <div><span class="kbd-box">→</span> / <span class="kbd-box">←</span> : Detik Timer +/-</div>
+                <div><span class="kbd-box">K</span> / <span class="kbd-box">J</span> : Babak +/-</div>
+                <div><span class="kbd-box">Q</span> / <span class="kbd-box">A</span> : Skor Home +/-</div>
+                <div><span class="kbd-box">P</span> / <span class="kbd-box">L</span> : Skor Away +/-</div>
+                <div><span class="kbd-box">Z</span> / <span class="kbd-box">C</span> : Kartu Kun/Merah Home</div>
+                <div><span class="kbd-box">X</span> / <span class="kbd-box">V</span> : Kartu Kun/Merah Away</div>
+                <div><span class="kbd-box">PgUp</span> / <span class="kbd-box">PgDn</span> : Substitusi H/A</div>
+                <div><span class="kbd-box">T</span> / <span class="kbd-box">G</span> : Penalti Home Gol/Gagal</div>
+                <div><span class="kbd-box">Y</span> / <span class="kbd-box">H</span> : Penalti Away Gol/Gagal</div>
+                <div><span class="kbd-box">M</span> : Buka/Tutup Remote Panel</div>
+            </div>
+            <button onclick="window.toggleHelp()" class="mt-8 w-full bg-yellow-500 text-black py-3 rounded-xl font-black text-lg uppercase">Tutup</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('click', () => { document.getElementById('focus-toast').style.opacity = '0'; window.focus(); });
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const PRESET_TEAMS = {
+            "BLAZE X START": { logo: "https://via.placeholder.com/320/ff5500/ffffff?text=BLAZE", players: [{name: "PLAYER 1", num: "1"}, {name: "PLAYER 2", num: "2"}, {name: "PLAYER 3", num: "3"}] },
+            "ALSEM": { logo: "https://via.placeholder.com/320/0055ff/ffffff?text=ALSEM", players: [{name: "HATU", num: "10"}, {name: "RONI", num: "5"}, {name: "ONGEN", num: "7"}] },
+            "TALAGA": { logo: "https://via.placeholder.com/320/228b22/ffffff?text=TALAGA", players: [{name: "EWIN", num: "2"}, {name: "FERLI", num: "9"}, {name: "OCEP", num: "8"}, {name: "ADIT", num: "19"}, {name: "RIVALDO", num: "7"}, {name: "CIKO", num: "11"}] }
+        };
+
+        let currentState = {
+            home: { score: 0, name: "BLAZE X START", logo: "", players: Array(9).fill().map(() => ({name: "", num: "", photo: ""})), penalties: [0,0,0,0,0,0,0] },
+            away: { score: 0, name: "ALSEM", logo: "", players: Array(9).fill().map(() => ({name: "", num: "", photo: ""})), penalties: [0,0,0,0,0,0,0] },
+            timer: { m: 20, s: 0, run: false }, period: 1, penaltyMode: false, overlay: null, buzzerTrigger: 0
+        };
+
+        let user = null; let tempSubPlayerOut = null;
+        
+        window.loadPreset = (team, presetName) => {
+            if(!PRESET_TEAMS[presetName]) return; const data = PRESET_TEAMS[presetName];
+            currentState[team].name = presetName; currentState[team].logo = data.logo;
+            currentState[team].players = Array(9).fill().map((_, i) => data.players[i] || {name: "", num: "", photo: ""});
+            document.getElementById(`inp-name-${team}`).value = presetName; pushState(); window.render();
+        };
+
+        window.updatePlayer = (t, i, f, v) => { if (!currentState[t].players[i]) currentState[t].players[i] = { name: "", num: "", photo: "" }; currentState[t].players[i][f] = v; pushState(false); };
+        window.debouncedUpdateName = (t, v) => { currentState[t].name = v || "TIM"; pushState(false); window.render(); };
+        window.updateScore = (t, v) => { if(v > 0) window.showPlayerSelect(t, 'goal'); else { currentState[t].score = Math.max(0, currentState[t].score+v); window.render(); pushState(); } };
+        window.toggleTimer = () => { currentState.timer.run = !currentState.timer.run; pushState(); window.render(); };
+        window.adjustTime = (u, v) => { 
+            if(u==='m') currentState.timer.m = Math.max(0, currentState.timer.m+v); 
+            else { currentState.timer.s += v; if(currentState.timer.s>=60){currentState.timer.s=0;currentState.timer.m++;} else if(currentState.timer.s<0){if(currentState.timer.m>0){currentState.timer.s=59;currentState.timer.m--;}else currentState.timer.s=0;} } 
+            window.render(); pushState(); 
+        };
+        window.changePeriod = (v) => { currentState.period = Math.max(1, currentState.period + v); window.render(); pushState(); };
+        window.manualBuzzer = () => { currentState.buzzerTrigger = Date.now(); pushState(); };
+        window.togglePenaltyMode = () => { currentState.penaltyMode = !currentState.penaltyMode; window.render(); pushState(); };
+        
+        window.recordPenalty = (team, status) => {
+            if (!currentState.penaltyMode) window.togglePenaltyMode();
+            const p = currentState[team].penalties;
+            const emptyIndex = p.indexOf(0);
+            if (emptyIndex !== -1) { p[emptyIndex] = status; pushState(); window.render(); }
+        };
+        window.togglePenaltyDot = (team, index) => { currentState[team].penalties[index] = (currentState[team].penalties[index] + 1) % 3; window.render(); pushState(); };
+        
+        window.uploadLogo = (team, input) => { if(input.files?.[0]) { const reader = new FileReader(); reader.onload = (e) => { currentState[team].logo = e.target.result; window.render(); pushState(); }; reader.readAsDataURL(input.files[0]); } };
+        window.toggleHelp = () => document.getElementById('help-modal').classList.toggle('hidden');
+        window.toggleRemote = () => document.getElementById('remote-control').classList.toggle('hidden-panel');
+        window.openStatsModal = () => document.getElementById('stats-modal').classList.toggle('hidden');
+        window.closePlayerModal = () => { tempSubPlayerOut = null; document.getElementById('player-modal').classList.add('hidden'); };
+
+        window.showPlayerSelect = async (t, type, stage = 'out') => {
+            const modal = document.getElementById('player-modal'); const wrapper = document.getElementById('modal-list-wrapper');
+            modal.classList.remove('hidden'); wrapper.innerHTML = '';
+            let title = type === 'goal' ? "PENCETAK GOL" : (type === 'yellow' ? "KARTU KUNING" : (type === 'red' ? "KARTU MERAH" : (stage === 'out' ? "PEMAIN KELUAR" : "PEMAIN MASUK")));
+            document.getElementById('modal-title').innerText = title;
+
+            const grid = document.createElement('div'); grid.className = "grid grid-cols-4 gap-3";
+            for(let i=0; i<9; i++) {
+                const p = currentState[t].players[i]; if(!p || !p.name) continue;
+                const item = document.createElement('div');
+                item.className = 'flex flex-col items-center justify-center p-3 bg-slate-800/50 hover:bg-slate-700 border border-slate-700 rounded-xl cursor-pointer transition-all aspect-square';
+                item.innerHTML = `<span class="text-3xl font-black text-white mb-1">${p.num || '-'}</span><span class="text-[10px] font-bold uppercase text-slate-400 truncate w-full text-center">${p.name}</span>`;
+                item.onclick = () => { 
+                    if(type === 'sub') { if(stage === 'out'){ tempSubPlayerOut = p; window.showPlayerSelect(t, 'sub', 'in'); } else { currentState.overlay = { type: 'sub', team: t, data: { out: tempSubPlayerOut, in: p }, timestamp: Date.now() }; pushState(); window.closePlayerModal(); } }
+                    else if(type === 'goal') { currentState[t].score++; currentState.overlay = { type: 'goal', team: t, data: p, timestamp: Date.now() }; pushState(); window.closePlayerModal(); }
+                    else { currentState.overlay = { type, team: t, data: p, timestamp: Date.now() }; pushState(); window.closePlayerModal(); }
+                };
+                grid.appendChild(item);
+            }
+            wrapper.appendChild(grid);
+        };
+
+        window.render = function() {
+            const safeSetText = (id, val) => { const el = document.getElementById(id); if (el && el.innerText != val) el.innerText = val; };
+            const safeSetSrc = (id, val) => { const el = document.getElementById(id); if (el && el.src != val) el.src = val; };
+
+            safeSetText('score-home', currentState.home.score); safeSetText('score-away', currentState.away.score);
+            safeSetText('display-name-home', currentState.home.name); safeSetText('display-name-away', currentState.away.name);
+            const timeStr = `${String(currentState.timer.m).padStart(2,'0')}:${String(currentState.timer.s).padStart(2,'0')}`;
+            safeSetText('timer-display', timeStr); safeSetText('remote-timer-display', timeStr);
+            safeSetText('period-display', currentState.period);
+            safeSetSrc('logo-img-home', currentState.home.logo || "https://via.placeholder.com/320/000000/FFFFFF?text=LOGO");
+            safeSetSrc('logo-img-away', currentState.away.logo || "https://via.placeholder.com/320/000000/FFFFFF?text=LOGO");
+
+            const isTimeUp = (currentState.timer.m === 0 && currentState.timer.s === 0 && currentState.buzzerTrigger > 0);
+            document.getElementById('time-up-overlay').style.display = isTimeUp ? 'flex' : 'none';
+
+            const timerBtn = document.getElementById('btn-timer'); 
+            if(timerBtn) { timerBtn.innerText = currentState.timer.run ? "PAUSE (Spasi)" : "START (Spasi)"; timerBtn.className = `w-full ${currentState.timer.run ? 'bg-yellow-600' : 'bg-green-600'} text-white font-black py-6 rounded-2xl text-3xl shadow-lg`; }
+            
+            ['home', 'away'].forEach(t => {
+                const p = currentState[t].penalties || [0,0,0,0,0,0,0];
+                const renderDot = (v) => v===1 ? '<div class="penalty-dot goal"><i class="fas fa-check text-xs"></i></div>' : (v===2 ? '<div class="penalty-dot fail"><i class="fas fa-times text-xs"></i></div>' : '<div class="penalty-dot"></div>');
+                document.getElementById(`pen-${t}-cont`).innerHTML = `<div class="penalty-row">${p.slice(0,3).map(renderDot).join('')}</div><div class="penalty-row">${p.slice(3,7).map(renderDot).join('')}</div>`;
+                document.getElementById(`remote-pen-grid-${t}`).innerHTML = `<div class="remote-penalty-row">${p.slice(0,3).map((v,i)=>`<div onclick="window.togglePenaltyDot('${t}', ${i})" class="remote-pen-btn ${v===1?'goal':(v===2?'fail':'')}">${v===1?'✔':(v===2?'✖':i+1)}</div>`).join('')}</div>`;
+                document.getElementById(`pen-${t}-cont`).className = currentState.penaltyMode ? "penalty-grid-container" : "hidden";
+                document.getElementById(`penalty-ctrl-${t}`).className = currentState.penaltyMode ? "mt-2 bg-black/40 p-3 rounded-xl border border-white/10" : "hidden";
+                
+                const cont = document.getElementById(`players-${t}`);
+                if(cont && cont.children.length === 0) {
+                    for(let i=0; i<9; i++) {
+                        const pl = currentState[t].players[i] || { num: "", name: "" };
+                        const row = document.createElement('div'); row.className = "flex gap-1";
+                        row.innerHTML = `<input type="text" placeholder="#" class="w-8 bg-slate-900 text-yellow-500 p-1.5 rounded-lg border border-slate-700 text-center font-bold text-xs" oninput="window.updatePlayer('${t}', ${i}, 'num', this.value)" value="${pl.num || ''}"><input type="text" placeholder="Nama" class="flex-1 bg-slate-900 text-white p-1.5 rounded-lg border border-slate-700 text-xs" oninput="window.updatePlayer('${t}', ${i}, 'name', this.value)" value="${pl.name || ''}">`;
+                        cont.appendChild(row);
+                    }
+                }
+            });
+            document.getElementById('btn-pen-mode').innerText = currentState.penaltyMode ? "Mode Penalti: ON" : "Mode Penalti: OFF";
+        };
+
+        let overlayTimeout = null;
+        function triggerOverlayVisual(type, team, data) {
+            const overlay = document.getElementById('event-overlay'); const card = document.getElementById('overlay-card-el');
+            const visual = document.getElementById('overlay-icon-visual'); const contentArea = document.getElementById('overlay-content-area');
+            if(!overlay || !card) return;
+            
+            overlay.classList.remove('active');
+            void overlay.offsetWidth; 
+            
+            if (overlayTimeout) clearTimeout(overlayTimeout);
+
+            card.className = `overlay-card theme-${team}-overlay`; 
+            document.getElementById('overlay-team-name-small').innerText = currentState[team].name;
+            document.getElementById('overlay-team-logo-small').src = currentState[team].logo || "https://via.placeholder.com/150/000000/FFFFFF?text=LOGO";
+            
+            const title = document.getElementById('overlay-status-title');
+            title.className = 'overlay-title-text';
+            const photoSrc = data.photo ? data.photo : (currentState[team].logo || "https://via.placeholder.com/350/000000/FFFFFF?text=LOGO");
+
+            if (type === 'goal') {
+                visual.innerHTML = `<img src="${photoSrc}" class="overlay-avatar">`; 
+                title.innerText = "GOOOAAAAL!!!!!!"; title.classList.add('is-goal');
+                contentArea.innerHTML = `<div class="overlay-player-main">${data.name}</div><div class="overlay-player-info">NOMOR PUNGGUNG ${data.num || '-'}</div>`;
+            } else if (type === 'sub') {
+                title.innerText = "SUBSTITUTION";
+                visual.innerHTML = '<i class="fas fa-exchange-alt" style="font-size:380px; color:#10b981; filter: drop-shadow(0 0 40px rgba(16, 185, 129, 0.5));"></i>';
+                contentArea.innerHTML = `
+                    <div class="sub-layout-box">
+                        <div class="sub-row-item sub-out-item">
+                            <div class="sub-badge out">OUT</div>
+                            <div class="sub-name-text">${data.out.name}</div>
+                            <div class="sub-num-text">${data.out.num || '-'}</div>
+                        </div>
+                        <div class="sub-row-item sub-in-item">
+                            <div class="sub-badge in">IN</div>
+                            <div class="sub-name-text">${data.in.name}</div>
+                            <div class="sub-num-text">${data.in.num || '-'}</div>
+                        </div>
+                    </div>`;
+            } else {
+                title.innerText = type === 'yellow' ? "YELLOW CARD" : "RED CARD";
+                visual.innerHTML = `
+                    <div class="card-visual-wrapper">
+                        <img src="${photoSrc}" class="overlay-avatar">
+                        <div class="card-element ${type}"></div>
+                    </div>`; 
+                contentArea.innerHTML = `<div class="overlay-player-main" style="font-size:120px;">${data.name}</div><div class="overlay-player-info">NOMOR ${data.num || '-'}</div>`;
+            }
+            
+            overlay.classList.add('active'); 
+            overlayTimeout = setTimeout(() => overlay.classList.remove('active'), 7000);
+        }
+
+        let pushTimeout = null;
+        async function pushState(instant = true) {
+            if (!user) return;
+            if (pushTimeout) clearTimeout(pushTimeout);
+            const doPush = async () => { await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'futsal_board_state', 'main_board'), currentState, { merge: true }); };
+            if (instant) doPush(); else pushTimeout = setTimeout(doPush, 300);
+        }
+
+        setInterval(() => {
+            if (currentState.timer.run) {
+                if (currentState.timer.s === 0) {
+                    if (currentState.timer.m === 0) { currentState.timer.run = false; currentState.buzzerTrigger = Date.now(); pushState(); }
+                    else { currentState.timer.m--; currentState.timer.s = 59; pushState(); }
+                } else { currentState.timer.s--; pushState(); }
+                window.render();
+            }
+        }, 1000);
+
+        async function initAuth() {
+            try {
+                const res = (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) ? await signInWithCustomToken(auth, __initial_auth_token) : await signInAnonymously(auth);
+                user = res.user;
+                
+                ['home', 'away'].forEach(t => { const sel = document.getElementById(`preset-${t}`); if(sel) Object.keys(PRESET_TEAMS).forEach(name => sel.add(new Option(name, name))); });
+                window.loadPreset('home', 'BLAZE X START'); window.loadPreset('away', 'ALSEM');
+
+                onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'futsal_board_state', 'main_board'), (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.overlay?.timestamp && (!currentState.overlay || data.overlay.timestamp > currentState.overlay.timestamp) && data.overlay.timestamp > Date.now() - 5000) {
+                            triggerOverlayVisual(data.overlay.type, data.overlay.team, data.overlay.data);
+                        }
+                        currentState = { ...currentState, ...data }; window.render();
+                    } else pushState();
+                });
+            } catch(e) { setTimeout(initAuth, 2000); }
+        }
+        initAuth();
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key) {
+                case 'ArrowUp': e.preventDefault(); window.adjustTime('m', 1); break;
+                case 'ArrowDown': e.preventDefault(); window.adjustTime('m', -1); break;
+                case 'ArrowRight': e.preventDefault(); window.adjustTime('s', 1); break;
+                case 'ArrowLeft': e.preventDefault(); window.adjustTime('s', -1); break;
+                case 'q': case 'Q': window.updateScore('home', 1); break;
+                case 'p': case 'P': window.updateScore('away', 1); break;
+                case 'a': case 'A': window.updateScore('home', -1); break;
+                case 'l': case 'L': window.updateScore('away', -1); break;
+                case 'z': case 'Z': window.showPlayerSelect('home', 'yellow'); break;
+                case 'x': case 'X': window.showPlayerSelect('away', 'yellow'); break;
+                case 'c': case 'C': window.showPlayerSelect('home', 'red'); break;
+                case 'v': case 'V': window.showPlayerSelect('away', 'red'); break;
+                case 'PageUp': e.preventDefault(); window.showPlayerSelect('home', 'sub'); break;
+                case 'PageDown': e.preventDefault(); window.showPlayerSelect('away', 'sub'); break;
+                case 'k': case 'K': window.changePeriod(1); break;
+                case 'j': case 'J': window.changePeriod(-1); break;
+                case 't': case 'T': window.recordPenalty('home', 1); break;
+                case 'g': case 'G': window.recordPenalty('home', 2); break;
+                case 'y': case 'Y': window.recordPenalty('away', 1); break;
+                case 'h': case 'H': window.recordPenalty('away', 2); break;
+                case ' ': e.preventDefault(); window.toggleTimer(); break;
+                case 'm': case 'M': e.preventDefault(); window.toggleRemote(); break; 
+            }
+        });
+
+        const resize = () => { document.getElementById('viewport').style.transform = `scale(${Math.min(window.innerWidth / 1600, window.innerHeight / 1200)})`; };
+        window.addEventListener('resize', resize); resize();
+    </script>
+</body>
+</html>

@@ -28,16 +28,16 @@ export const createDefaultSquad = (prefix: 'H' | 'A'): Player[] => {
   ];
 };
 
-export const defaultMatchState: MatchState = {
-  matchId: 'FUTSAL-2026',
-  matchTitle: 'LIGA FUTSAL PROFESIONAL INDONESIA',
+export const createInitialRoomState = (roomId = 'JONG26'): MatchState => ({
+  matchId: roomId.trim().toUpperCase().slice(0, 6) || 'JONG26',
+  matchTitle: 'GAWANG MINI JONG CANO',
   timer: {
     minutes: 20,
     seconds: 0,
     isRunning: false,
     initialMinutes: 20,
   },
-  period: 1, // 1: Babak 1, 2: Babak 2, 3: Extra Time, 4: Penalti
+  period: 1, // 1: Babak 1, 2: Babak 2, 3: Extra Time 1, 4: Extra Time 2, 5: Penalti
   isPenaltyMode: false,
   homeTeam: {
     id: 'home',
@@ -77,4 +77,6 @@ export const defaultMatchState: MatchState = {
   },
   activeOverlay: null,
   lastUpdated: Date.now(),
-};
+});
+
+export const defaultMatchState: MatchState = createInitialRoomState('JONG26');

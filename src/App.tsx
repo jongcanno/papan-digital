@@ -5,8 +5,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MatchState, ActiveOverlay } from './types/scoreboard';
-import { defaultMatchState } from './utils/initialState';
-import { syncManager } from './utils/syncManager';
+import { syncManager, ConnectionStatusInfo } from './utils/syncManager';
 import { audioBuzzer } from './utils/audio';
 import { BroadcastDisplay } from './components/BroadcastDisplay';
 import { BroadcastOverlay } from './components/BroadcastOverlay';
@@ -14,13 +13,18 @@ import { RemoteController } from './components/RemoteController';
 import { StatsModal } from './components/StatsModal';
 import { KeyboardHelpModal } from './components/KeyboardHelpModal';
 import { AiAnalysisModal } from './components/AiAnalysisModal';
-import { SlidersHorizontal, Monitor, Radio } from 'lucide-react';
+import { DeviceConnectModal } from './components/DeviceConnectModal';
+import { SlidersHorizontal, Monitor, QrCode, Wifi } from 'lucide-react';
 
 export default function App() {
   const [matchState, setMatchState] = useState<MatchState>(() => syncManager.loadState());
+  const [connectionInfo, setConnectionInfo] = useState<ConnectionStatusInfo>(() =>
+    syncManager.getConnectionInfo()
+  );
   const [isRemoteOpen, setIsRemoteOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isKeyboardHelpOpen, setIsKeyboardHelpOpen] = useState(false);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // URL query mode (e.g. ?mode=remote or ?mode=display)
@@ -39,6 +43,9 @@ export default function App() {
   const stateRef = useRef(matchState);
   stateRef.current = matchState;
 
+  const connStatusRef = useRef(connectionInfo.status);
+  connStatusRef.current = connectionInfo.status;
+
   // Check URL parameter for standalone remote view on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -50,15 +57,26 @@ export default function App() {
     }
   }, []);
 
-  // Subscribe to external sync updates (BroadcastChannel / LocalStorage)
+  // Subscribe to realtime state, connection status, and remote buzzer events
   useEffect(() => {
-    const unsubscribe = syncManager.subscribe((incomingState) => {
+    const unsubState = syncManager.subscribe((incomingState) => {
       setMatchState(incomingState);
     });
-    return () => unsubscribe();
+    const unsubStatus = syncManager.subscribeStatus((info) => {
+      setConnectionInfo(info);
+    });
+    const unsubBuzzer = syncManager.subscribeBuzzer((duration) => {
+      audioBuzzer.playBuzzer(duration);
+    });
+
+    return () => {
+      unsubState();
+      unsubStatus();
+      unsubBuzzer();
+    };
   }, []);
 
-  // Update match state and broadcast
+  // Update match state and broadcast across all connected devices
   const updateMatchState = useCallback((partialState: Partial<MatchState>) => {
     setMatchState((prev) => {
       const next: MatchState = {
@@ -79,7 +97,7 @@ export default function App() {
     updateMatchState({ activeOverlay: null });
   }, [updateMatchState]);
 
-  // Trigger temporary overlay animation (auto-dismiss after 3.8s)
+  // Trigger temporary overlay animation (auto-dismiss after 4s)
   const triggerOverlay = useCallback(
     (overlay: ActiveOverlay) => {
       if (overlayTimeoutRef.current) {
@@ -89,25 +107,42 @@ export default function App() {
 
       overlayTimeoutRef.current = setTimeout(() => {
         handleDismissOverlay();
-      }, 4000);
+      }, 4200);
     },
     [updateMatchState, handleDismissOverlay]
   );
 
-  // Manual buzzer trigger
+  // Manual & Remote buzzer trigger (plays locally + sends signal to Display devices)
   const handlePlayBuzzer = useCallback(() => {
-    audioBuzzer.playBuzzer();
+    audioBuzzer.playBuzzer(1.6);
+    syncManager.triggerRemoteBuzzer(1.6);
   }, []);
 
-  // High precision countdown timer tick
+  // Join specific room by 6-char code
+  const handleJoinRoom = useCallback(async (roomId: string) => {
+    const loaded = await syncManager.joinRoom(roomId);
+    setMatchState(loaded);
+    setIsConnectModalOpen(false);
+  }, []);
+
+  // Generate & join a new 6-char room code
+  const handleCreateNewRoom = useCallback(async () => {
+    const newCode = syncManager.generateRandomRoomCode();
+    const loaded = await syncManager.joinRoom(newCode);
+    setMatchState(loaded);
+  }, []);
+
+  // Offline Fallback Countdown Timer (When connected to Server, Server runs the authoritative timer)
   useEffect(() => {
     const timerInterval = setInterval(() => {
+      // Only run local tick if offline from server stream
+      if (connStatusRef.current === 'connected') return;
+
       const current = stateRef.current;
       if (!current.timer.isRunning) return;
 
       const { minutes, seconds } = current.timer;
 
-      // When timer hits 00:00
       if (minutes === 0 && seconds <= 1) {
         audioBuzzer.playBuzzer(2.2);
 
@@ -130,7 +165,6 @@ export default function App() {
         setMatchState(updated);
         syncManager.saveAndBroadcast(updated);
 
-        // Auto dismiss timeup overlay after 5s
         if (overlayTimeoutRef.current) clearTimeout(overlayTimeoutRef.current);
         overlayTimeoutRef.current = setTimeout(() => {
           handleDismissOverlay();
@@ -138,7 +172,6 @@ export default function App() {
         return;
       }
 
-      // Decrement second
       let newMins = minutes;
       let newSecs = seconds - 1;
       if (newSecs < 0) {
@@ -406,7 +439,7 @@ export default function App() {
           }
           break;
 
-        // H: Gagal Penalti Away (Or Toggle Remote if Shift/Combo or H)
+        // H: Gagal Penalti Away
         case 'h':
         case 'H':
           e.preventDefault();
@@ -518,9 +551,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#080b11] text-slate-100 flex flex-col items-center justify-center relative overflow-x-hidden">
-      {/* Top Floating Mode Bar (Switch between Display & Mobile Remote view) */}
-      <div className="absolute top-2 left-4 z-40 flex items-center gap-2">
-        <div className="flex items-center gap-1 p-1 bg-slate-900/90 border border-slate-800 rounded-xl shadow-lg backdrop-blur-md">
+      {/* Top Floating Mode & Multi-Device Sync Bar */}
+      <div className="absolute top-2 left-4 right-4 z-40 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        <div className="flex items-center gap-1 p-1 bg-slate-900/90 border border-slate-800 rounded-xl shadow-lg backdrop-blur-md pointer-events-auto">
           <button
             onClick={() => setViewMode('display')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-outfit uppercase transition ${
@@ -544,6 +577,22 @@ export default function App() {
             Remote Operator
           </button>
         </div>
+
+        {/* Quick Multi-Device Room & QR Button */}
+        <button
+          onClick={() => setIsConnectModalOpen(true)}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 text-xs font-bold font-outfit text-cyan-300 shadow-lg backdrop-blur-md transition pointer-events-auto"
+        >
+          <QrCode className="w-4 h-4 text-cyan-400" />
+          <span>ROOM: {connectionInfo.roomId}</span>
+          <span className="text-slate-600">|</span>
+          <Wifi
+            className={`w-3.5 h-3.5 ${
+              connectionInfo.status === 'connected' ? 'text-emerald-400' : 'text-amber-400'
+            }`}
+          />
+          <span className="text-emerald-400">{connectionInfo.connectedDevices} Perangkat</span>
+        </button>
       </div>
 
       {/* VIEW MODE 1: BROADCAST DISPLAY (1600x1200 4:3 Hi-Res Scale) */}
@@ -554,10 +603,12 @@ export default function App() {
             onOpenStats={() => setIsStatsOpen(true)}
             onOpenRemote={() => setIsRemoteOpen(true)}
             onOpenKeyboardHelp={() => setIsKeyboardHelpOpen(true)}
+            onOpenConnectModal={() => setIsConnectModalOpen(true)}
             onPlayBuzzer={handlePlayBuzzer}
             isFullscreen={isFullscreen}
             onToggleFullscreen={handleToggleFullscreen}
             onSelectPenaltyKick={handleSelectPenaltyKick}
+            connectedDevices={connectionInfo.connectedDevices}
           />
         </main>
       )}
@@ -572,6 +623,8 @@ export default function App() {
             onPlayBuzzer={handlePlayBuzzer}
             onTriggerAiAnalysis={handleTriggerAiAnalysis}
             isAiLoading={isAiLoading}
+            onOpenConnectModal={() => setIsConnectModalOpen(true)}
+            connectedDevices={connectionInfo.connectedDevices}
           />
         </main>
       )}
@@ -587,6 +640,8 @@ export default function App() {
             onTriggerAiAnalysis={handleTriggerAiAnalysis}
             isAiLoading={isAiLoading}
             onClose={() => setIsRemoteOpen(false)}
+            onOpenConnectModal={() => setIsConnectModalOpen(true)}
+            connectedDevices={connectionInfo.connectedDevices}
           />
         </div>
       )}
@@ -597,6 +652,15 @@ export default function App() {
         homeTeam={matchState.homeTeam}
         awayTeam={matchState.awayTeam}
         onDismiss={handleDismissOverlay}
+      />
+
+      {/* MULTI-DEVICE QR CODE & ROOM CONNECTION MODAL */}
+      <DeviceConnectModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        connectionInfo={connectionInfo}
+        onJoinRoom={handleJoinRoom}
+        onCreateNewRoom={handleCreateNewRoom}
       />
 
       {/* STATS MODAL ("IN THE MATCH") */}

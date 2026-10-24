@@ -20,6 +20,7 @@ import {
   Check,
   X,
   Radio,
+  QrCode,
 } from 'lucide-react';
 
 interface RemoteControllerProps {
@@ -30,6 +31,8 @@ interface RemoteControllerProps {
   onTriggerAiAnalysis: (type: 'commentary' | 'press_release') => void;
   isAiLoading: boolean;
   onClose?: () => void;
+  onOpenConnectModal?: () => void;
+  connectedDevices?: number;
 }
 
 export const RemoteController: React.FC<RemoteControllerProps> = ({
@@ -40,6 +43,8 @@ export const RemoteController: React.FC<RemoteControllerProps> = ({
   onTriggerAiAnalysis,
   isAiLoading,
   onClose,
+  onOpenConnectModal,
+  connectedDevices = 1,
 }) => {
   const [activeTab, setActiveTab] = useState<'match' | 'squad' | 'stats' | 'teams' | 'ai'>('match');
 
@@ -291,23 +296,35 @@ export const RemoteController: React.FC<RemoteControllerProps> = ({
   return (
     <div className="w-full max-w-4xl mx-auto rounded-3xl bg-slate-900 border-2 border-slate-700/80 shadow-2xl overflow-hidden flex flex-col">
       {/* Top Controller Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-slate-950 border-b border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 bg-slate-950 border-b border-slate-800">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
-          <h2 className="text-lg md:text-xl font-black font-outfit text-white tracking-wide uppercase">
-            OPERATOR REMOTE CONTROLLER
+          <h2 className="text-base sm:text-xl font-black font-outfit text-white tracking-wide uppercase">
+            REMOTE OPERATOR
           </h2>
-          <span className="text-xs text-slate-400 font-mono">[{state.matchId}]</span>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Tutup Remote"
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
+
+        <div className="flex items-center gap-2">
+          {onOpenConnectModal && (
+            <button
+              onClick={onOpenConnectModal}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-xs font-bold font-outfit text-cyan-300 transition"
+            >
+              <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+              <span>ROOM: {state.matchId}</span>
+              <span className="text-emerald-400">({connectedDevices} Aktif)</span>
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Tutup Remote"
+              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Navigation Tab Bar */}
@@ -1127,6 +1144,23 @@ export const RemoteController: React.FC<RemoteControllerProps> = ({
         {/* TAB 4: KELOLA TIM & LOGO (9 PEMAIN PER TIM) */}
         {activeTab === 'teams' && (
           <div className="space-y-6">
+            {/* Tournament / League Title Card */}
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-2">
+              <label className="text-xs text-amber-300 font-bold uppercase tracking-wider block">
+                NAMA TURNAMEN / LIGA PERTANDINGAN
+              </label>
+              <input
+                type="text"
+                value={state.matchTitle || 'GAWANG MINI JONG CANO'}
+                onChange={(e) => onUpdateState({ matchTitle: e.target.value })}
+                placeholder="Contoh: GAWANG MINI JONG CANO"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-base font-black text-amber-400 font-outfit uppercase tracking-wide focus:border-amber-400 focus:outline-none"
+              />
+              <span className="text-[11px] text-slate-400">
+                Nama ini tampil di pojok kiri atas layar display scoreboard.
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Home Team Profile */}
               <div className="p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/30 space-y-4">

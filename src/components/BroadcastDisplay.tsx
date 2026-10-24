@@ -13,6 +13,7 @@ import {
   Circle,
   Radio,
   Flame,
+  QrCode,
 } from 'lucide-react';
 
 interface BroadcastDisplayProps {
@@ -20,10 +21,12 @@ interface BroadcastDisplayProps {
   onOpenStats: () => void;
   onOpenRemote: () => void;
   onOpenKeyboardHelp: () => void;
+  onOpenConnectModal: () => void;
   onPlayBuzzer: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onSelectPenaltyKick: (teamId: 'home' | 'away', index: number, value: boolean | null) => void;
+  connectedDevices?: number;
 }
 
 export const BroadcastDisplay: React.FC<BroadcastDisplayProps> = ({
@@ -31,10 +34,12 @@ export const BroadcastDisplay: React.FC<BroadcastDisplayProps> = ({
   onOpenStats,
   onOpenRemote,
   onOpenKeyboardHelp,
+  onOpenConnectModal,
   onPlayBuzzer,
   isFullscreen,
   onToggleFullscreen,
   onSelectPenaltyKick,
+  connectedDevices = 1,
 }) => {
   const { homeTeam, awayTeam, timer, period, isPenaltyMode, matchTitle } = state;
 
@@ -76,7 +81,7 @@ export const BroadcastDisplay: React.FC<BroadcastDisplayProps> = ({
               LIVE MATCH
             </span>
             <h2 className="hidden sm:inline-block text-xs md:text-sm font-semibold tracking-wider text-slate-400 font-outfit uppercase truncate max-w-xs md:max-w-md">
-              {matchTitle || 'LIGA FUTSAL PROFESIONAL'}
+              {matchTitle || 'GAWANG MINI JONG CANO'}
             </h2>
           </div>
 
@@ -90,6 +95,15 @@ export const BroadcastDisplay: React.FC<BroadcastDisplayProps> = ({
 
           {/* Quick Utility Icon Buttons (Top Right) */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenConnectModal}
+              title="Scan QR Code / Hubungkan HP Remote"
+              aria-label="Hubungkan Perangkat Lain"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-950/80 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-500/50 shadow-sm transition-all text-xs font-bold font-outfit"
+            >
+              <QrCode className="w-4 h-4 md:w-4 md:h-4" />
+              <span className="hidden lg:inline">QR REMOTE</span>
+            </button>
             <button
               onClick={onOpenStats}
               title="Statistik Pertandingan (In The Match)"
@@ -338,13 +352,25 @@ export const BroadcastDisplay: React.FC<BroadcastDisplayProps> = ({
         {/* 3. BROADCAST FOOTER BAR */}
         <footer className="relative z-10 flex flex-wrap items-center justify-between border-t border-slate-800/80 pt-4 text-xs text-slate-400 font-medium">
           <div className="flex items-center gap-4">
-            <span className="text-slate-300 font-bold font-outfit">KODE MATCH: {state.matchId}</span>
+            <button
+              onClick={onOpenConnectModal}
+              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-cyan-500/30 text-cyan-300 font-bold font-outfit transition"
+            >
+              <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+              <span>ROOM: {state.matchId}</span>
+              <span className="text-slate-500">·</span>
+              <span className="text-emerald-400">{connectedDevices} Perangkat</span>
+            </button>
             <span className="hidden sm:inline text-slate-600">|</span>
-            <span className="hidden sm:inline">Tekan <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[11px]">Spasi</kbd> untuk Start/Pause Timer</span>
+            <span className="hidden sm:inline">
+              Tekan <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[11px]">Spasi</kbd> untuk Start/Pause Timer
+            </span>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-slate-500 text-[11px]">Tekan <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[11px]">M</kbd> untuk Remote Operator</span>
+            <span className="text-slate-500 text-[11px]">
+              Tekan <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono text-[11px]">M</kbd> untuk Remote Operator
+            </span>
           </div>
         </footer>
       </div>

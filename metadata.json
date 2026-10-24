@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Futsal Digital Scoreboard Pro",
+  "description": "Papan skor digital interaktif, responsif, dan real-time untuk pertandingan futsal dan mini soccer dengan tema Dark Neon, sinkronisasi multi-perangkat, dan ulasan taktis AI.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
